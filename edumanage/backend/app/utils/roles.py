@@ -1,0 +1,18 @@
+from functools import wraps
+from typing import Callable
+from flask import jsonify
+from flask_jwt_extended import verify_jwt_in_request, get_jwt
+
+
+def roles_required(*allowed_roles: str) -> Callable:
+    def decorator(fn: Callable) -> Callable:
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            verify_jwt_in_request()
+            claims = get_jwt() or {}
+            role = claims.get("role")
+            if role not in allowed_roles:
+                return jsonify({"message": "Insufficient permissions"}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
